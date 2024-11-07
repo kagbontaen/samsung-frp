@@ -37,7 +37,7 @@ def manualFRPBypass():
 
 def waitForDevice():
     print("Waiting for device with adb")
-    adb("kill-server")
+    # adb("kill-server")
     adb("wait-for-device")
 
 if __name__ == "__main__":
