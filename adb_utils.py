@@ -32,7 +32,7 @@ def manualFRPBypass():
     print("OK")
     print("For complete reset FRP, goto \'Backup and reset\' and make \'Factory data reset\'")
     print("Rebooting...")
-    adb("shell reboot")
+    #adb("shell reboot")
     print("OK")
 
 def waitForDevice():
