@@ -7,9 +7,9 @@
 - Install them using `pip install -r requirements.txt`
 - You can simply plug the samsung over USB and run `python main.py`
 
-
-![Screenshot 2024-11-08 011527](https://github.com/user-attachments/assets/acd1dc7b-a0dc-4c30-99fd-ce18f8d74c09)
 ![Screenshot 2024-11-08 011452](https://github.com/user-attachments/assets/260c97a9-79e8-4d3c-b71f-83e6052d6326)
+![Screenshot 2024-11-08 011527](https://github.com/user-attachments/assets/acd1dc7b-a0dc-4c30-99fd-ce18f8d74c09)
+
   
 ## unlock.sh
 
