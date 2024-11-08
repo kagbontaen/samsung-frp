@@ -3,7 +3,7 @@ from at_utils import enableADB
 from adb_utils import waitForDevice, uploadAndRunFRPBypass, manualFRPBypass
 
 def main():
-    samsungGalaxyToModemMode()
+    #samsungGalaxyToModemMode()
     enableADB()
     waitForDevice()
     manualFRPBypass()
