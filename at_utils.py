@@ -9,10 +9,13 @@ Original file is located at
 
 # Commented out IPython magic to ensure Python compatibility.
 from typing import List
+from inputimeout import inputimeout, TimeoutOccurred
 try:
     import serial
+    from inputimeout import inputimeout, TimeoutOccurred
 except:
-    print('run "pip install pyserial pyusb" from command prompt first')
+    print('run "pip install pyserial pyusb inputimeout" from command prompt first')
+    print('or run "pip install -r requirements", if you want to')
 #     %pip install pyserial pyusb
     try:
         import serial
@@ -47,14 +50,14 @@ def list_serial_ports() -> list_ports_common.ListPortInfo:
 def get_AT_serial(port: str) -> serial.Serial:
     return serial.Serial(port, baudrate=SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT)
 
-def ATSend(io: serial.Serial, cmd: str) -> bool:
+def ATSend(io: serial.Serial, cmd: str, t=0.5) -> bool:
     if not io.isOpen():
         return False
     print(f"Sending {cmd.encode()}")
     io.write(cmd.encode())
-    time.sleep(0.5)
+    time.sleep(t)
     ret = io.read_all()
-    print(f"Received {ret}")
+    print(f"Received {parse_at_response(ret)}")
 
     if b"OK\r\n" in ret:
         return True
@@ -68,6 +71,20 @@ def ATSend(io: serial.Serial, cmd: str) -> bool:
         return False
     return True
 
+def parse_at_response(response: bytes) -> str:
+    # Decode the bytes to a string and strip any whitespace
+    decoded_response = response.decode('utf-8').strip()
+    
+    # If the response includes "OK", split to isolate before "OK"
+    if "OK" in decoded_response:
+        info_part = decoded_response.split("OK")[0].strip('+').strip()
+    else:
+        info_part = decoded_response.strip('+').strip()
+
+    # Remove leading '+' and return the cleaned information
+    cleaned_info = info_part.lstrip('+')
+    return cleaned_info
+    
 def tryATCmds(io: serial.Serial, cmds: List[str]):
     for i, cmd in enumerate(cmds):
         print(f"Trying method {i}")
@@ -81,17 +98,59 @@ def tryATCmds(io: serial.Serial, cmds: List[str]):
         io.close()
     except:
         print("Unable to properly close serial connection")
+        
+def tryATdCmds(io: serial.Serial, cmds: List[str]):
+    for i, cmd in enumerate(cmds):
+        try:
+            res = ATSend(io, cmd, 1.5)
+            if not res:
+                print("OK")
+        except:
+            print(f"Error while sending command {cmd}")
 
 def enableADB():
+
+    # try:
+        # inputimeout(prompt=f"Choose a serial port (default={default_port.device}) :", timeout=30)
+    # except TimeoutOccurred:
+        # print('anyways')
     default_port = list_serial_ports()
-    port = input(f"Choose a serial port (default={default_port.device}) :") or str(default_port.device)
+    try:
+        port = inputimeout(prompt=f"or enter the port you'd like to use {default_port.device} :", timeout=10)
+        if port=='':
+            port=default_port.device
+    except TimeoutOccurred:
+        port = str(default_port.device)
     io = get_AT_serial(port)
     print("Initial...")
     # Seems to check if we are in Factory Test mode but apparently not working on the samsung I have
-    ATSend(io, "AT+KSTRINGB=0,3\r\n")
-    print("Go to emergency dialer and enter *#0*# or *#*#88#*#*, press enter when done")
-    input()
 
+
+    cmds=[]
+    #Check Basic Information
+    cmds.append("AT+DEVCONINFO")
+    #Check Storage Size
+    cmds.append("AT+SIZECHECK=?")
+    #Check Network Lock
+    cmds.append("AT+SVCIFPGM=1,4")
+    #Check Android Version
+    cmds.append("AT+VERSNAME=3,2,3")
+    #Check Battery Information
+    cmds.append("AT+BATGETLEVEL?")
+    #Check IMEI Information
+    cmds.append("AT+IMEINUM")
+    #Check Software Information
+    cmds.append("AT+SWVER")
+    #Check Factory Reset Protection
+    cmds.append("AT+REACTIVE=1,0,0")
+    tryATdCmds(io, cmds)
+    print ("Press Enter to cotinue")
+    ATSend(io, "AT+KSTRINGB=0,3\r\n")
+    try:
+        inputimeout(prompt='Go to emergency dialer and enter *#0*# or *#*#88#*#*, press enter when done', timeout=30)
+    except TimeoutOccurred:
+        print('anyways')
+    
     print("Enabling USB Debugging...")
     cmds = []
     cmds.append("AT+DUMPCTRL=1,0\r\n")
